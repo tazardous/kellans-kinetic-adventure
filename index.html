@@ -146,7 +146,27 @@ const BODY_CLING=[
 "...kBBk..kBBk...",
 "...kkkk..kkkk...",
 "................"];
-const K={ idle:pair(spr(HEAD.concat(BODY_IDLE))), walk:pair(spr(HEAD.concat(BODY_WALK))), jump:pair(spr(HEAD.concat(BODY_JUMP))), cling:pair(spr(HEAD.concat(BODY_CLING))) };
+function heroFrames(head,map){
+  const tr=rows=>rows.map(r=>[...r].map(ch=>map[ch]||ch).join(''));
+  const H=tr(head);
+  return { idle:pair(spr(H.concat(tr(BODY_IDLE)))), walk:pair(spr(H.concat(tr(BODY_WALK)))), jump:pair(spr(H.concat(tr(BODY_JUMP)))), cling:pair(spr(H.concat(tr(BODY_CLING)))) };
+}
+// Diana: reddish hair in a ponytail with a pink bow, brown eyes, purple suit
+const DIANA_HEAD=HEAD.map((r,j)=>{
+  let a=[...r];
+  if(j>=3&&j<=11){ a[1]='h'; a[0]='k'; if(j===11){ a[1]='k'; } }
+  if(j===2){ a[1]='k'; a[2]='r'; } if(j===3){ a[2]='h'; } if(j===1){ a[2]='k'; a[3]='r'; }
+  if(j===12) a[1]='k';
+  return a.join('');
+});
+Object.assign(PAL,{h:'#C8502A',H:'#8A2E14',u:'#AA00AA',U:'#FF55FF',q:'#5500AA',e2:'#6B3A1E'});
+PAL.f='#6B3A1E'; // brown eyes
+const HEROES={
+  kellan:{name:'KELLAN',frames:heroFrames(HEAD,{})},
+  diana:{name:'DIANA',frames:heroFrames(DIANA_HEAD,{y:'h',Y:'H',b:'f',c:'u',C:'U',p:'q'})},
+};
+let heroKey='kellan', K=HEROES.kellan.frames;
+const otherHero=()=>HEROES[heroKey==='kellan'?'diana':'kellan'];
 
 const S={
 blob:spr(["................","................","................","................","......kkkk......","....kkLLLLkk....","...kLLLLLLLLk...","..kLLwkLLwkLLk..","..kLLwkLLwkLLk..",".kLLLLLLLLLLLLk.",".kLLLLkkkkLLLLk.","kLLLLLLLLLLLLLLk","kGLLLLLLLLLLLLGk","kGGLLLLLLLLLLGGk",".kkkkkkkkkkkkkk.","................"]),
@@ -205,7 +225,7 @@ function mk(W,H,theme,name,msgs,fn){ return ()=>{
 }; }
 const LEVELS=[
  mk(150,16,'meadow','Bubble Meadow',[
-  "Hi, I'm Pup! Woof! Use LEFT and RIGHT to run, UP or SPACE to jump.",
+  "Hi, I'm Bernie! Woof! Use LEFT and RIGHT to run, UP or SPACE to jump.",
   "Bad guys? Jump right on top of them to bop them!",
   "Jump at a wall and keep pushing toward it. Your sticky mittens hold on! Jump again to climb higher.",
   "Grab the bombs! Press X (or BOMB) to throw one at the cracked rocks.",
@@ -341,8 +361,8 @@ function wantedTune(){
 /* ---------------- input ---------------- */
 const down={}, hit=new Set();
 const KEYMAP={ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right',ArrowUp:'jump',w:'jump',W:'jump',' ':'jump',z:'jump',Z:'jump',k:'jump',
-  ArrowDown:'down',s:'down',S:'down',x:'bomb',X:'bomb',Control:'bomb',j:'bomb',b:'bomb',B:'bomb',Enter:'start',p:'pause',P:'pause',Escape:'pause',m:'mute',M:'mute'};
-addEventListener('keydown',e=>{ const k=KEYMAP[e.key]; if(!k) return; e.preventDefault(); audio(); if(!e.repeat){ hit.add(k); if(k==='jump'||k==='bomb') hit.add('start'); } down[k]=true; });
+  ArrowDown:'down',s:'down',S:'down',c:'swap',C:'swap',x:'bomb',X:'bomb',Control:'bomb',j:'bomb',b:'bomb',B:'bomb',Enter:'start',p:'pause',P:'pause',Escape:'pause',m:'mute',M:'mute'};
+addEventListener('keydown',e=>{ const k=KEYMAP[e.key]; if(!k) return; e.preventDefault(); audio(); if(!e.repeat){ hit.add(k); if(k==='jump'||(k==='bomb'&&state!=='title')) hit.add('start'); } down[k]=true; });
 addEventListener('keyup',e=>{ const k=KEYMAP[e.key]; if(k) down[k]=false; });
 addEventListener('blur',()=>{ for(const k in down) down[k]=false; });
 const touchEl=document.getElementById('touch');
@@ -350,7 +370,7 @@ const coarse=matchMedia('(pointer: coarse)').matches||'ontouchstart' in window;
 if(coarse) touchEl.hidden=false;
 touchEl.querySelectorAll('.tb').forEach(b=>{
   const k=b.dataset.k;
-  const on=e=>{ e.preventDefault(); audio(); try{ b.setPointerCapture(e.pointerId); }catch(_){} down[k]=true; hit.add(k); if(k==='jump'||k==='bomb') hit.add('start'); b.classList.add('on'); };
+  const on=e=>{ e.preventDefault(); audio(); try{ b.setPointerCapture(e.pointerId); }catch(_){} down[k]=true; hit.add(k); if(k==='jump'||(k==='bomb'&&state!=='title')) hit.add('start'); b.classList.add('on'); };
   const off=e=>{ down[k]=false; b.classList.remove('on'); };
   b.addEventListener('pointerdown',on); b.addEventListener('pointerup',off); b.addEventListener('pointercancel',off); b.addEventListener('lostpointercapture',off);
   b.addEventListener('contextmenu',e=>e.preventDefault());
@@ -363,6 +383,7 @@ let score=0, bombCount=0, starsGot=0, starsTotal=0, hint=null, endT=0, menuSel=0
 let saveData={unlocked:1,best:0};
 try{ const s=JSON.parse(localStorage.getItem(SAVE)||'null'); if(s) saveData=Object.assign(saveData,s); }catch(e){}
 const persist=()=>{ try{ localStorage.setItem(SAVE,JSON.stringify(saveData)); }catch(e){} };
+if(saveData.hero==='diana'){ heroKey='diana'; K=HEROES.diana.frames; }
 const P={x:0,y:0,w:10,h:22,vx:0,vy:0,face:1,ground:false,cling:0,coyote:0,jbuf:0,inv:0,hearts:3,maxHearts:3,anim:0,clingCD:0,dead:0,spring:false,ride:null,hidden:false};
 let checkpoint={x:0,y:0};
 
@@ -592,7 +613,8 @@ function step(){
   if(state==='title'){
     if(hit.has('left')) menuSel=(menuSel+saveData.unlocked-1)%saveData.unlocked;
     if(hit.has('right')) menuSel=(menuSel+1)%saveData.unlocked;
-    if(hit.has('start')){ score=0; bombCount=0; P.maxHearts=3; loadLevel(menuSel); }
+    if(hit.has('down')||hit.has('bomb')||hit.has('swap')){ heroKey=heroKey==='kellan'?'diana':'kellan'; K=HEROES[heroKey].frames; saveData.hero=heroKey; persist(); sfx('fruit'); }
+    else if(hit.has('start')){ score=0; bombCount=0; P.maxHearts=3; loadLevel(menuSel); }
   } else if(state==='play'){
     if(hit.has('pause')){ state='pause'; }
     else { updPlayer(); updEnts(); updBombs(); updParts(); updCam(); if(shake>0) shake--; }
@@ -654,7 +676,8 @@ function drawTruck(e,ox,oy){
   g.fillStyle='#FFFF55'; g.fillRect(x+51,y+14-wob,3,3); // headlight
   g.fillStyle=(t>>3)&1?'#5555FF':'#FF5555'; g.fillRect(x+36,y-wob,6,2); // light bar
   g.fillStyle='#FFFF55'; g.fillRect(x+8,y+14-wob,20,2); g.fillStyle='#FFFFFF'; g.fillRect(x+9,y+17-wob,4,1);
-  if(state==='levelEnd'){ g.drawImage(SL.pup.r,x+12,y-6-wob); const k=K.idle.r; g.drawImage(k,0,0,16,12,x+32,y-1-wob,16,12); }
+  { const sib=otherHero().frames.idle.r; g.drawImage(sib,0,0,16,12,x+34,y-1-wob,16,12); }
+  if(state==='levelEnd'){ g.drawImage(SL.pup.r,x+8,y-6-wob); g.drawImage(K.idle.r,0,0,16,12,x+19,y-2-wob,16,12); }
   for(const wx of [x+6,x+36]){ const spin=(state==='levelEnd'?(t>>2):0)&1; g.fillStyle='#000'; circle(wx+8,y+26,9); g.fillStyle='#333'; circle(wx+8,y+26,7); g.fillStyle='#AAAAAA'; circle(wx+8,y+26,3); g.fillStyle='#000'; g.fillRect(wx+(spin?7:3),y+25,spin?2:10,spin?10:2); }
 }
 function drawDino(e,ox,oy){
@@ -692,7 +715,7 @@ function drawEnts(ox,oy){
       case 'star': g.drawImage(S.star,(x-1)|0,(y+Math.sin((t+e.x)*0.1)*2)|0); break;
       case 'bomb': g.drawImage(S.bomb,(x-1)|0,(y-1)|0); break;
       case 'heart': g.drawImage(S.heart,x|0,(y+Math.sin(t*0.1)*1.5)|0); break;
-      case 'pup': { const talk=hint&&hint.e===e&&(t>>3)&1; const face=P.x<e.x?'l':'r'; g.drawImage((talk?SL.pupOpen:SL.pup)[face],x|0,(y-((t>>4)&1&&!talk?1:0))|0); break; }
+      case 'pup': { if(state==='levelEnd') break; const talk=hint&&hint.e===e&&(t>>3)&1; const face=P.x<e.x?'l':'r'; g.drawImage((talk?SL.pupOpen:SL.pup)[face],x|0,(y-((t>>4)&1&&!talk?1:0))|0); break; }
       case 'flag': g.fillStyle='#AAAAAA'; g.fillRect((x+1)|0,y|0,2,30); g.fillStyle=e.on?'#55FF55':'#FF5555'; { const wv=(t>>3)&1; g.fillRect((x+3)|0,(y+(e.on?0:14))|0,10,7); g.fillRect((x+13)|0,(y+(e.on?1:15)+wv)|0,2,5); } g.fillStyle='#FFFF55'; g.fillRect(x|0,(y-2)|0,4,3); break;
       case 'truck': drawTruck(e,ox,oy); break;
       case 'dino': drawDino(e,ox,oy); break;
@@ -743,7 +766,7 @@ function draw(){
   if(hint){
     const lines=wrap(hint.msg,Math.floor((VW-60)/7)); const h=14+lines.length*10;
     box(8,6,VW-16,h,'#FFFFFF','#000000'); cx.fillStyle='#FFAA00'; cx.fillRect(Math.round(9*SC),Math.round(7*SC),Math.round(3*SC),Math.round((h-2)*SC));
-    txt('PUP:',16,10,7,'#AA5500','left',false);
+    txt('BERNIE:',16,10,7,'#AA5500','left',false);
     lines.forEach((l,i)=>txt(l,16,20+i*10,7,'#000000','left',false));
   }
   if(state==='pause'){ cx.fillStyle='rgba(0,0,40,.6)'; cx.fillRect(0,0,cv.width,cv.height); txt('PAUSED',VW/2,70,14,'#FFFF55','center'); txt('PRESS P OR ENTER TO PLAY',VW/2,100,7,'#FFFFFF','center'); txt(['MUSIC + SOUND','SOUND ONLY','QUIET'][soundMode]+' (M)',VW/2,116,7,'#55FFFF','center'); }
@@ -764,22 +787,30 @@ function drawTitle(){
   // ground strip and the hero
   g.fillStyle='#00AA00'; g.fillRect(0,VH-34,VW,4); g.fillStyle='#AA5500'; g.fillRect(0,VH-30,VW,30); g.fillStyle='#5a2a00'; for(let i=0;i<VW;i+=9) g.fillRect(i,VH-22+(i%3)*5,3,2);
   const bob=Math.abs(Math.sin(t*0.05))*10;
-  const kimg=((t>>5)&1)?K.jump.r:K.idle.r;
-  g.drawImage(kimg,0,0,16,24,VW/2-44,VH-34-48-bob,32,48);
-  g.drawImage(SL.pup.l,0,0,16,15,VW/2+12,VH-34-30,32,30);
+  const heroesX={kellan:VW/2-78,diana:VW/2-30};
+  for(const hk of ['kellan','diana']){
+    const fr=HEROES[hk].frames, sel=hk===heroKey, img=sel&&((t>>5)&1)?fr.jump.r:fr.idle.r;
+    if(!sel) g.globalAlpha=0.55;
+    g.drawImage(img,0,0,16,24,heroesX[hk],VH-34-48-(sel?bob:0),32,48);
+    g.globalAlpha=1;
+    if(sel){ g.fillStyle='#FFFF55'; tri(heroesX[hk]+16,VH-34-56-bob,heroesX[hk]+11,VH-34-63-bob,heroesX[hk]+21,VH-34-63-bob); }
+  }
+  g.drawImage(SL.pup.l,0,0,16,15,VW/2+26,VH-34-30,32,30);
   cx.imageSmoothingEnabled=false; cx.drawImage(lo,0,0,cv.width,cv.height);
   txt("KELLAN'S",VW/2,16,16,'#FFFF55','center'); txt('KINETIC ADVENTURE',VW/2,38,11,'#55FFFF','center');
   const L=LEVELS[menuSel]();
   txt((saveData.unlocked>1?'◀ ':'')+'LEVEL '+(menuSel+1)+': '+L.name.toUpperCase()+(saveData.unlocked>1?' ▶':''),VW/2,62,7,'#FFFFFF','center');
-  if((t>>5)&1) txt(coarse?'TAP TO PLAY':'PRESS ENTER TO PLAY',VW/2,78,8,'#FF55FF','center');
+  if((t>>5)&1) txt(coarse?'TAP OR ▲ TO PLAY':'PRESS ENTER TO PLAY',VW/2,78,8,'#FF55FF','center');
+  txt('PLAYING AS '+HEROES[heroKey].name+(coarse?'  ·  BOMB TO SWITCH':'  ·  ↓ OR C TO SWITCH'),VW/2,104,6,'#FFFF55','center');
+  txt('KELLAN',VW/2-62,VH-28,6,heroKey==='kellan'?'#FFFFFF':'#AAAAAA','center'); txt('DIANA',VW/2-14,VH-28,6,heroKey==='diana'?'#FFFFFF':'#AAAAAA','center'); txt('BERNIE',VW/2+42,VH-28,6,'#AAAAAA','center');
   if(!coarse) txt('← → RUN   ↑ OR SPACE JUMP   X BOMB   P PAUSE   M MUSIC',VW/2,92,5,'#AAAAAA','center');
   if(saveData.best) txt('BEST SCORE '+saveData.best,VW/2,VH-12,6,'#FFFF55','center');
   if(toast&&t<toast.until) txt('♪ '+toast.msg,VW-6,6,6,'#FFFF55','right');
 }
 function drawWin(){
   cx.fillStyle='rgba(0,0,30,.55)'; cx.fillRect(0,0,cv.width,cv.height*PH/VH);
-  txt('YOU DID IT, KELLAN!',VW/2,40,12,'#FFFF55','center');
-  txt('PUP SAYS: WOOF WOOF! BEST RESCUE EVER!',VW/2,64,6,'#55FFFF','center');
+  txt('YOU DID IT, '+HEROES[heroKey].name+'!',VW/2,40,12,'#FFFF55','center');
+  txt('BERNIE SAYS: WOOF WOOF! BEST RESCUE EVER!',VW/2,64,6,'#55FFFF','center');
   txt('SCORE '+score,VW/2,84,9,'#FFFFFF','center');
   if(endT>90&&(t>>4)&1) txt(coarse?'TAP TO PLAY AGAIN':'PRESS ENTER',VW/2,108,7,'#FF55FF','center');
 }
