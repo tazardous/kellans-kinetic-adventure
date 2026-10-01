@@ -22,7 +22,7 @@ Everything is relative-pathed, so a project subdirectory works.
 | Jump        | ↑, Space, W or Z       | ▲                |
 | Throw bomb  | X, J or B              | BOMB             |
 | Pause       | P or Esc               | II               |
-| Sound       | M                      | ♪                |
+| Music/sound | M (cycles music + sound, sound only, quiet) | ♪ |
 
 - **Sticky mittens** — jump at a wall and keep pushing toward it to stick. Jump
   again to climb. Blue ice walls are too slippery.
@@ -37,6 +37,14 @@ Everything is relative-pathed, so a project subdirectory works.
 
 There is no game over. Running out of hearts or falling in the goo puts Kellan back
 at the last flag. Progress and best score are kept in localStorage.
+
+## Music
+
+Each screen has its own original chiptune loop in the style of an old PC speaker:
+a bouncy march on the title, an oom-pah tune in Bubble Meadow, a spooky echo in
+Crystal Caverns and a stompy dinosaur tune in Dino Valley. The tunes are written
+as note strings in `TUNES` inside `index.html`, for example `C5:2` is C in octave 5
+for two sixteenths and `R:4` is a rest.
 
 ## Levels
 
