@@ -436,7 +436,7 @@ function moveEntity(e,isPlayer){
   const prevBottom=e.y+e.h;
   e.y+=e.vy; e.ground=false; e.landTile=null; e.landTx=0; e.landTy=0;
   const l=Math.floor(e.x/T), r=Math.floor((e.x+e.w-1)/T);
-  if(e.vy>0){ const ty=Math.floor((e.y+e.h-1)/T);
+  if(e.vy>0){ const ty=Math.floor((e.y+e.h-0.001)/T);
     for(let tx=l;tx<=r;tx++){ const c=tileAt(tx,ty); const oneway=(c==='='||c==='S')&&prevBottom<=ty*T+0.5;
       if(solidAt(tx,ty)||oneway){ e.y=ty*T-e.h; e.vy=0; e.ground=true; e.landTile=c; e.landTx=tx; e.landTy=ty; break; } } }
   else if(e.vy<0){ const ty=Math.floor(e.y/T); for(let tx=l;tx<=r;tx++) if(solidAt(tx,ty)){ e.y=(ty+1)*T; e.vy=0; break; } }
